@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Duel Arena — Mini-Duel Tournament</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: #eef;
+    background: radial-gradient(1200px 600px at 50% -10%, #2b1055 0%, #0b0620 55%, #05030f 100%);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 14px 12px 40px; user-select: none; touch-action: manipulation;
+  }
+  h1 { font-size: 34px; margin: 6px 0 2px; letter-spacing: 2px; text-align: center;
+       background: linear-gradient(90deg,#ffd23f,#ff5e78,#4cc9f0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: #9a8fc7; font-size: 13px; text-align: center; margin-bottom: 12px; }
+  .chip { background: #1c1440; border: 1px solid #43307a; border-radius: 999px; padding: 6px 14px; font-weight: 700; }
+  .chip .coin { color: #ffd23f; }
+  .card { background: rgba(20,14,48,.92); border: 1px solid #382a6e; border-radius: 16px; padding: 18px; width: 100%; max-width: 520px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .hidden { display: none !important; }
+  input[type=text] { width: 100%; padding: 14px; font-size: 18px; border-radius: 10px; border: 2px solid #43307a; background: #0d0824; color: #fff; margin-bottom: 10px; text-align: center; }
+  button { width: 100%; padding: 15px; font-size: 18px; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; margin: 5px 0; color: #12081f; }
+  .btn-create { background: linear-gradient(90deg,#ffd23f,#ff9f1c); }
+  .btn-quick { background: linear-gradient(90deg,#4cc9f0,#4361ee); color: #fff; }
+  .btn-join { background: linear-gradient(90deg,#06d6a0,#4cc9f0); }
+  .btn-start { background: linear-gradient(90deg,#ff5e78,#ffd23f); font-size: 20px; }
+  .btn-ghost { background: #241a4d; color: #cfc6ff; border: 1px solid #43307a; }
+  button:active { transform: scale(.98); }
+  .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+  .code { font-size: 40px; letter-spacing: 10px; text-align: center; font-weight: 900; color: #ffd23f; margin: 4px 0; }
+  .slots { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .slot { background: #150d33; border: 1px dashed #43307a; border-radius: 10px; padding: 10px; text-align: center; font-weight: 700; min-height: 42px; }
+  .slot.filled { border-style: solid; border-color: #4cc9f0; }
+  .slot .bot { color: #9a8fc7; font-size: 11px; display: block; }
+  .note { color: #9a8fc7; font-size: 13px; text-align: center; line-height: 1.5; }
+  /* bracket */
+  #bracket { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .bcol h4 { margin: 0 0 6px; text-align: center; color: #9a8fc7; font-size: 11px; letter-spacing: 1px; }
+  .bmatch { background: #150d33; border: 1px solid #382a6e; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; font-size: 12px; }
+  .bmatch.live { border-color: #ffd23f; box-shadow: 0 0 10px rgba(255,210,63,.35); }
+  .bmatch .bp { display: flex; justify-content: space-between; padding: 1px 0; white-space: nowrap; overflow: hidden; }
+  .bmatch .bp.win { color: #ffd23f; font-weight: 800; }
+  .bmatch .bp.lose { color: #6f669c; text-decoration: line-through; }
+  /* stage */
+  .vs { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .fighter { flex: 1; text-align: center; background: #150d33; border-radius: 10px; padding: 8px 4px; }
+  .fighter .fname { font-weight: 800; font-size: 16px; overflow: hidden; }
+  .pips { font-size: 18px; letter-spacing: 3px; }
+  .pips .on { color: #ffd23f; } .pips .off { color: #3a2d66; }
+  .vsx { font-weight: 900; color: #ff5e78; font-size: 20px; }
+  .gamename { text-align: center; font-size: 20px; font-weight: 900; margin: 8px 0 2px; }
+  .roundlbl { text-align: center; color: #9a8fc7; font-size: 13px; margin-bottom: 10px; }
+  #stage { min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #reactionPad { width: 100%; height: 220px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; text-align: center; padding: 10px; transition: background .08s; }
+  .pad-wait { background: #7a1020; color: #ffb3ba; }
+  .pad-go { background: #0f9d58; color: #eafff3; }
+  .pad-idle { background: #241a4d; color: #9a8fc7; }
+  #tapBtn { height: 200px; font-size: 34px; border-radius: 16px; background: linear-gradient(180deg,#ff5e78,#d90429); color: #fff; }
+  .tapbars { width: 100%; margin-bottom: 10px; }
+  .tbar { height: 22px; background: #150d33; border-radius: 8px; margin: 5px 0; position: relative; overflow: hidden; }
+  .tbar .fill { height: 100%; transition: width .15s; }
+  .tbar .lbl { position: absolute; left: 8px; top: 2px; font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px #000; }
+  #timerBar { height: 8px; background: #150d33; border-radius: 4px; overflow: hidden; width: 100%; margin-bottom: 10px; }
+  #timerFill { height: 100%; background: #4cc9f0; width: 100%; }
+  .pads { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 320px; }
+  .mpad { height: 105px; border-radius: 16px; border: 3px solid rgba(0,0,0,.35); opacity: .55; cursor: pointer; }
+  .mpad.lit { opacity: 1; filter: brightness(1.7); }
+  .mpad:active { opacity: 1; }
+  .memprog { display: flex; justify-content: space-between; width: 100%; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+  #banner { text-align: center; font-size: 19px; font-weight: 900; min-height: 28px; margin: 8px 0; color: #ffd23f; }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #ffd23f; color: #231600; font-weight: 800; padding: 12px 20px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 50; max-width: 92vw; text-align: center; }
+  .champ { font-size: 52px; text-align: center; }
+  .confetti { position: fixed; top: -10px; font-size: 22px; animation: fall linear forwards; z-index: 40; pointer-events: none; }
+  @keyframes fall { to { transform: translateY(105vh) rotate(600deg); } }
+</style>
+</head>
+<body>
+  <h1>⚔️ DUEL ARENA</h1>
+  <div class="sub">Mini-duel tournament — 8 fighters, 1 champion</div>
+  <div class="chip" id="coinChip">🪙 <span class="coin" id="coinAmt">1000</span> game coins</div>
+  <div style="height:12px"></div>
+
+  <!-- HOME -->
+  <div class="card" id="scr-home">
+    <input type="text" id="nameInput" maxlength="16" placeholder="Your fighter name">
+    <button class="btn-create" id="btnCreate">🏟️ Create Room</button>
+    <div class="row">
+      <input type="text" id="codeInput" maxlength="4" placeholder="CODE" style="text-transform:uppercase">
+      <button class="btn-join" id="btnJoin">Join Room</button>
+    </div>
+    <button class="btn-quick" id="btnQuick">⚡ Quick Match</button>
+    <p class="note">Every fighter antes <b>50 game coins</b>. Champion takes the whole pot (400 with a full bracket).<br>
+    Coins are just for fun — not real money. Short a buy-in? The house refills you to 1000, free.</p>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="card hidden" id="scr-lobby">
+    <div class="note">ROOM CODE — share it with your friends</div>
+    <div class="code" id="roomCode">----</div>
+    <div class="slots" id="slots"></div>
+    <button class="btn-start hidden" id="btnStart">🥊 START TOURNAMENT</button>
+    <p class="note" id="lobbyNote">Empty seats get filled by bots, so the bracket is always full.</p>
+    <button class="btn-ghost" id="btnLeaveLobby">Leave room</button>
+  </div>
+
+  <!-- GAME -->
+  <div class="card hidden" id="scr-game">
+    <div id="bracket"></div>
+    <div class="vs">
+      <div class="fighter"><div class="fname" id="f1name">—</div><div class="pips" id="f1pips"></div></div>
+      <div class="vsx">VS</div>
+      <div class="fighter"><div class="fname" id="f2name">—</div><div class="pips" id="f2pips"></div></div>
+    </div>
+    <div class="gamename" id="gameName">Get ready…</div>
+    <div class="roundlbl" id="roundLbl"></div>
+    <div id="banner"></div>
+    <div id="stage"></div>
+  </div>
+
+  <!-- END -->
+  <div class="card hidden" id="scr-end">
+    <div class="champ">🏆</div>
+    <h2 style="text-align:center;margin:6px 0" id="champLine">Champion!</h2>
+    <p class="note" id="potLine"></p>
+    <div id="bracketEnd"></div>
+    <button class="btn-start" id="btnRematch">🔁 REMATCH</button>
+    <button class="btn-ghost" id="btnHome">Back to home</button>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const MEM_COLORS = ["#e63946", "#ffd23f", "#06d6a0", "#4cc9f0"];
+let ws, myId = null, myName = "Player", roomCode = null, isHost = false, quickMode = false;
+let cur = null;          // current duel {p1,p2,game,round,wins,matchId}
+let bracketData = null;
+let timerAnim = null;
+
+function coinKey(name) { return "duelCoins_" + name; }
+function getCoins(name) {
+  const v = parseInt(localStorage.getItem(coinKey(name)), 10);
+  return Number.isFinite(v) ? v : 1000;
+}
+function setCoins(name, v) { localStorage.setItem(coinKey(name), String(v)); $("coinAmt").textContent = v; }
+function toast(msg, ms = 3200) {
+  const t = $("toast"); t.textContent = msg; t.classList.remove("hidden");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.add("hidden"), ms);
+}
+function show(id) {
+  for (const s of ["scr-home", "scr-lobby", "scr-game", "scr-end"]) $(s).classList.toggle("hidden", s !== id);
+}
+function pips(w) { return '<span class="' + (w > 0 ? "on" : "off") + '">●</span><span class="' + (w > 1 ? "on" : "off") + '">●</span>'; }
+
+function renderBracket(el, data) {
+  if (!data) { el.innerHTML = ""; return; }
+  const col = (title, ids) => {
+    let h = '<div class="bcol"><h4>' + title + "</h4>";
+    for (const id of ids) {
+      const m = data.find((x) => x.id === id);
+      if (!m) continue;
+      const prow = (p, w) => {
+        if (!p) return '<div class="bp"><span>TBD</span><span></span></div>';
+        const cls = m.winner ? (m.winner === p.id ? "win" : "lose") : "";
+        return '<div class="bp ' + cls + '"><span>' + esc(p.name) + '</span><span>' + (w ? "●".repeat(w) : "") + "</span></div>";
+      };
+      h += '<div class="bmatch' + (m.live ? " live" : "") + '">' + prow(m.p1, m.wins.p1) + prow(m.p2, m.wins.p2) + "</div>";
+    }
+    return h + "</div>";
+  };
+  el.innerHTML = col("QUARTERS", ["QF1", "QF2", "QF3", "QF4"]) + col("SEMIS", ["SF1", "SF2"]) + col("FINAL", ["F"]);
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function iAmDuelist() { return cur && (cur.p1.id === myId || cur.p2.id === myId); }
+function foeName() { return cur.p1.id === myId ? cur.p2.name : cur.p1.name; }
+
+function setFighters() {
+  if (!cur) return;
+  $("f1name").textContent = cur.p1.name + (cur.p1.isBot ? " 🤖" : "");
+  $("f2name").textContent = cur.p2.name + (cur.p2.isBot ? " 🤖" : "");
+  $("f1pips").innerHTML = pips(cur.wins.p1);
+  $("f2pips").innerHTML = pips(cur.wins.p2);
+  $("gameName").textContent = cur.gameName;
+  $("roundLbl").textContent = cur.label + " · Round " + cur.round + " of 3 · First to 2 round-wins takes the duel" +
+    (iAmDuelist() ? "" : " · 👀 Spectating");
+}
+
+function stageHTML(html) { $("stage").innerHTML = html; }
+function banner(msg) { $("banner").textContent = msg || ""; }
+
+/* ---------- mini-game stage builders ---------- */
+function buildReaction() {
+  stageHTML('<div id="reactionPad" class="pad-idle">Get ready…</div>');
+  $("reactionPad").addEventListener("pointerdown", () => { if (iAmDuelist()) send({ type: "act", act: "tap" }); });
+}
+function reactionPhase(phase, data) {
+  const pad = $("reactionPad"); if (!pad) return;
+  if (phase === "ready") { pad.className = "pad-wait"; pad.id = "reactionPad"; pad.textContent = "🔴 WAIT FOR GREEN…"; banner("Don't tap too soon — that's a foul!"); }
+  if (phase === "go") { pad.className = "pad-go"; pad.textContent = "🟢 TAP!!!"; banner(""); }
+  if (phase === "foul") {
+    banner(data.playerId === myId ? "🚨 You jumped the gun — foul!" : "🚨 " + nameOf(data.playerId) + " fouled!");
+  }
+  if (phase === "result") {
+    pad.className = "pad-idle"; pad.textContent = "🏁";
+    banner((data.note || "") + " — " + nameOf(data.winnerId) + " takes the round!");
+  }
+}
+function buildTapRace() {
+  stageHTML(
+    '<div class="tapbars">' +
+    '<div class="tbar"><div class="fill" id="tb1" style="background:#ff5e78"></div><div class="lbl" id="tbl1"></div></div>' +
+    '<div class="tbar"><div class="fill" id="tb2" style="background:#4cc9f0"></div><div class="lbl" id="tbl2"></div></div></div>' +
+    '<div id="timerBar"><div id="timerFill"></div></div>' +
+    '<button id="tapBtn">👆 TAP!</button>'
+  );
+  $("tbl1").textContent = cur.p1.name + ": 0";
+  $("tbl2").textContent = cur.p2.name + ": 0";
+  $("tapBtn").addEventListener("pointerdown", (e) => { e.preventDefault(); if (iAmDuelist()) send({ type: "act", act: "tap" }); });
+}
+function tapRacePhase(phase, data) {
+  if (phase === "countdown") banner("Tap race — get those fingers ready…");
+  if (phase === "go") {
+    banner("GO! Tap as fast as you can!");
+    const total = data.endsAt - Date.now();
+    const t0 = Date.now();
+    clearInterval(timerAnim);
+    timerAnim = setInterval(() => {
+      const left = Math.max(0, 1 - (Date.now() - t0) / total);
+      const f = $("timerFill"); if (f) f.style.width = (left * 100) + "%";
+      if (left <= 0) clearInterval(timerAnim);
+    }, 60);
+  }
+  if (phase === "scores" || phase === "suddenDeath") {
+    if (phase === "suddenDeath") banner("🤝 TIE! Sudden death — first to +" + "10 more taps!");
+    const c = data.counts || {};
+    const max = Math.max(20, c[cur.p1.id] || 0, c[cur.p2.id] || 0);
+    if ($("tb1")) { $("tb1").style.width = (((c[cur.p1.id] || 0) / max) * 100) + "%"; $("tbl1").textContent = cur.p1.name + ": " + (c[cur.p1.id] || 0); }
+    if ($("tb2")) { $("tb2").style.width = (((c[cur.p2.id] || 0) / max) * 100) + "%"; $("tbl2").textContent = cur.p2.name + ": " + (c[cur.p2.id] || 0); }
+  }
+  if (phase === "result") {
+    clearInterval(timerAnim);
+    const c = data.counts || {};
+    banner("🏁 " + (c[cur.p1.id] || 0) + " – " + (c[cur.p2.id] || 0) + " · " + nameOf(data.winnerId) + " takes the round!");
+  }
+}
+function buildMemory() {
+  let pads = '<div class="memprog"><span id="mp1"></span><span id="mp2"></span></div><div class="pads">';
+  for (let i = 0; i < 4; i++) pads += '<div class="mpad" data-c="' + i + '" style="background:' + MEM_COLORS[i] + '"></div>';
+  stageHTML(pads + "</div>");
+  document.querySelectorAll(".mpad").forEach((p) => {
+    p.addEventListener("pointerdown", () => {
+      flashPad(+p.dataset.c, 150);
+      if (iAmDuelist()) send({ type: "act", act: "press", color: +p.dataset.c });
+    });
+  });
+  memProgressReset(0);
+}
+function flashPad(i, ms) {
+  const p = document.querySelector('.mpad[data-c="' + i + '"]');
+  if (!p) return;
+  p.classList.add("lit"); setTimeout(() => p.classList.remove("lit"), ms);
+}
+function memProgressReset(len) {
+  if ($("mp1")) $("mp1").textContent = cur.p1.name + ": 0/" + len;
+  if ($("mp2")) $("mp2").textContent = cur.p2.name + ": 0/" + len;
+}
+function memoryPhase(phase, data) {
+  if (phase === "show") {
+    banner("👀 Watch the sequence… (length " + data.length + ")");
+    memProgressReset(data.length);
+    (data.sequence || []).forEach((c, i) => setTimeout(() => flashPad(c, 320), 500 + i * 420));
+  }
+  if (phase === "input") banner(iAmDuelist() ? "Your turn — repeat it!" : "Fighters are repeating the sequence…");
+  if (phase === "progress") {
+    const el = data.playerId === (cur && cur.p1.id) ? $("mp1") : $("mp2");
+    const nm = data.playerId === (cur && cur.p1.id) ? cur.p1.name : cur.p2.name;
+    if (el) el.textContent = nm + ": " + (data.ok ? data.done + "/" + data.length : "❌ at " + data.done + "/" + data.length);
+    if (!data.ok) banner("💥 " + nm + " slipped!");
+  }
+  if (phase === "grow") banner("Both nailed it! Sequence grows to " + data.length + "…");
+  if (phase === "retry") banner("Dead even — new sequence, same length…");
+  if (phase === "result") banner("🏁 " + (data.note || "") );
+}
+function nameOf(id) {
+  if (!cur) return "Someone";
+  if (cur.p1.id === id) return cur.p1.name;
+  if (cur.p2.id === id) return cur.p2.name;
+  return "Someone";
+}
+
+/* ---------- socket ---------- */
+function connect() {
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+  ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch { return; } onMsg(m); };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+function onMsg(m) {
+  switch (m.type) {
+    case "welcome": myId = m.id; break;
+    case "created": roomCode = m.code; break;
+    case "error": toast("⚠️ " + m.message); break;
+    case "room": {
+      roomCode = m.code; isHost = m.hostId === myId; quickMode = m.quick;
+      if (m.phase === "lobby") {
+        show("scr-lobby");
+        $("roomCode").textContent = m.code;
+        const slots = $("slots"); slots.innerHTML = "";
+        for (let i = 0; i < 8; i++) {
+          const p = m.players[i];
+          const d = document.createElement("div");
+          d.className = "slot" + (p ? " filled" : "");
+          d.innerHTML = p ? esc(p.name) + (p.id === myId ? " (you)" : "") : '<span style="color:#6f669c">🤖 bot seat</span>';
+          slots.appendChild(d);
+        }
+        $("btnStart").classList.toggle("hidden", !(isHost && !m.quick));
+        $("lobbyNote").textContent = m.quick
+          ? "Quick Match — the tournament starts on its own once fighters arrive."
+          : (isHost ? "You're the host. Start whenever — bots fill the empty seats." : "Waiting for the host to start… bots will fill the empty seats.");
+      }
+      break;
+    }
+    case "snapshot": bracketData = m.bracket; renderBracket($("bracket"), bracketData); show("scr-game"); break;
+    case "tournamentStart": {
+      bracketData = m.bracket; renderBracket($("bracket"), bracketData);
+      show("scr-game"); banner("Tournament started! Pot: " + m.pot + " coins");
+      const amEntrant = (bracketData || []).some((mt) => (mt.p1 && mt.p1.id === myId) || (mt.p2 && mt.p2.id === myId));
+      if (amEntrant) {
+        let c = getCoins(myName);
+        if (c < m.ante) { c = 1000; toast("🏦 House refill! Balance topped back up to 1000 game coins."); }
+        setCoins(myName, c - m.ante);
+        toast("Ante paid: " + m.ante + " game coins. Win the pot of " + m.pot + "!");
+      }
+      break;
+    }
+    case "matchStart": {
+      cur = { p1: m.p1, p2: m.p2, game: m.game, gameName: m.gameName, round: m.round, wins: m.wins, label: m.label, matchId: m.matchId };
+      bracketData = m.bracket; renderBracket($("bracket"), bracketData);
+      show("scr-game"); setFighters(); banner("");
+      if (m.game === "reaction") buildReaction();
+      if (m.game === "taprace") buildTapRace();
+      if (m.game === "memory") buildMemory();
+      if (!iAmDuelist()) banner("👀 Spectating: " + m.p1.name + " vs " + m.p2.name);
+      break;
+    }
+    case "game": {
+      if (!cur) break;
+      if (m.game === "reaction") reactionPhase(m.phase, m);
+      if (m.game === "taprace") tapRacePhase(m.phase, m);
+      if (m.game === "memory") memoryPhase(m.phase, m);
+      break;
+    }
+    case "roundEnd": {
+      if (cur) { cur.wins = m.wins; setFighters(); }
+      bracketData = m.bracket; renderBracket($("bracket"), bracketData);
+      toast("Round to " + m.winnerName + " (" + (cur ? cur.gameName : "") + ")");
+      break;
+    }
+    case "matchEnd": {
+      bracketData = m.bracket; renderBracket($("bracket"), bracketData);
+      toast("🥊 " + m.label + ": " + m.winnerName + " wins " + m.score + "!");
+      break;
+    }
+    case "champion": {
+      bracketData = m.bracket; renderBracket($("bracketEnd"), bracketData);
+      show("scr-end");
+      const mine = m.championId === myId;
+      $("champLine").textContent = mine ? "🎉 YOU are the champion, " + m.championName + "!" : "🏆 " + m.championName + " is the champion!";
+      $("potLine").textContent = mine
+        ? "You take the whole pot: +" + m.pot + " game coins!"
+        : m.championName + " takes the pot of " + m.pot + " game coins.";
+      if (mine) setCoins(myName, getCoins(myName) + m.pot);
+      confetti();
+      break;
+    }
+  }
+}
+function confetti() {
+  const em = ["🎉", "🪙", "⭐", "🏆", "🎊"];
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement("span");
+    s.className = "confetti";
+    s.textContent = em[i % em.length];
+    s.style.left = Math.random() * 100 + "vw";
+    s.style.animationDuration = (2 + Math.random() * 2.5) + "s";
+    s.style.animationDelay = (Math.random() * 0.7) + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 5500);
+  }
+}
+
+/* ---------- wiring ---------- */
+function myChosenName() {
+  const n = $("nameInput").value.trim();
+  return n || myName || "Player";
+}
+$("btnCreate").onclick = () => { myName = myChosenName(); localStorage.setItem("duelArenaName", myName); setCoins(myName, getCoins(myName)); send({ type: "create", name: myName }); };
+$("btnJoin").onclick = () => {
+  const code = $("codeInput").value.trim().toUpperCase();
+  if (code.length !== 4) { toast("Enter the 4-letter room code"); return; }
+  myName = myChosenName(); localStorage.setItem("duelArenaName", myName); setCoins(myName, getCoins(myName));
+  send({ type: "join", name: myName, code });
+};
+$("btnQuick").onclick = () => { myName = myChosenName(); localStorage.setItem("duelArenaName", myName); setCoins(myName, getCoins(myName)); send({ type: "quick", name: myName }); };
+$("btnStart").onclick = () => send({ type: "start" });
+$("btnLeaveLobby").onclick = () => location.reload();
+$("btnRematch").onclick = () => send({ type: "rematch" });
+$("btnHome").onclick = () => location.reload();
+
+$("nameInput").value = localStorage.getItem("duelArenaName") || "";
+myName = $("nameInput").value || "Player";
+$("coinAmt").textContent = getCoins(myName);
+connect();
+</script>
+</body>
+</html>
